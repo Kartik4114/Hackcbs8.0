@@ -18,7 +18,7 @@ const getShareBaseUrl = () => {
   if (process.env.APP_BASE_URL) {
     return `${process.env.APP_BASE_URL.replace(/\/$/, "")}/care-plan`
   }
-  return "https://healthhub.app/care-plan"
+  return "https://JeevanSetu.app/care-plan"
 }
 
 const router = express.Router()
@@ -40,7 +40,7 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
         fileExt = path.extname(filename).toLowerCase()
         const result = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
-            { resource_type: "auto", folder: "healthhub-prescriptions" },
+            { resource_type: "auto", folder: "JeevanSetu-prescriptions" },
             (error, result) => {
               if (error) reject(error)
               else resolve(result)

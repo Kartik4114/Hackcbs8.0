@@ -16,7 +16,7 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req, res) =
 
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { resource_type: "auto", folder: "healthhub-documents" },
+        { resource_type: "auto", folder: "JeevanSetu-documents" },
         (error, result) => {
           if (error) reject(error)
           else resolve(result)
@@ -58,7 +58,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
 
     if (document && document.fileUrl) {
       const publicId = document.fileUrl.split("/").pop().split(".")[0]
-      await cloudinary.uploader.destroy(`healthhub-documents/${publicId}`)
+      await cloudinary.uploader.destroy(`JeevanSetu-documents/${publicId}`)
     }
 
     res.json({ message: "Document deleted" })

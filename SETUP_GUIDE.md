@@ -1,9 +1,9 @@
-# HealthHub MERN Stack - Complete Setup Guide
+# JeevanSetu MERN Stack - Complete Setup Guide
 
 ## Project Structure
 
 \`\`\`
-healthhub/
+JeevanSetu/
 ├── backend/                 # Express.js server
 │   ├── models/             # MongoDB models
 │   ├── routes/             # API routes
@@ -71,7 +71,7 @@ npm install
 # Create .env file
 cat > .env << EOF
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/healthhub
+MONGODB_URI=mongodb://localhost:27017/JeevanSetu
 JWT_SECRET=your_super_secret_jwt_key_change_this
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
@@ -251,7 +251,7 @@ Error: Invalid credentials
 Solution:
 1. Verify CLOUDINARY credentials in .env
 2. Check API key isn't expired
-3. Ensure folder 'healthhub-documents' exists
+3. Ensure folder 'JeevanSetu-documents' exists
 \`\`\`
 
 ### Frontend Can't Connect to Backend
@@ -300,8 +300,8 @@ mongosh
 # List databases
 show databases
 
-# Use healthhub database
-use healthhub
+# Use JeevanSetu database
+use JeevanSetu
 
 # List collections
 show collections
@@ -310,29 +310,6 @@ show collections
 db.users.find()
 db.healthrecords.find()
 db.documents.find()
-\`\`\`
-
-## Production Deployment
-
-### Backend (Heroku)
-\`\`\`bash
-# Install Heroku CLI
-heroku create healthhub-api
-heroku config:set PORT=5000
-heroku config:set MONGODB_URI=mongodb+srv://...
-heroku config:set JWT_SECRET=your_production_secret
-# ... set other env vars
-git push heroku main
-\`\`\`
-
-### Frontend (Vercel)
-\`\`\`bash
-# Install Vercel CLI
-npm install -g vercel
-vercel
-
-# Set env variables in Vercel dashboard
-VITE_API_URL=https://healthhub-api.herokuapp.com/api
 \`\`\`
 
 ## Security Best Practices

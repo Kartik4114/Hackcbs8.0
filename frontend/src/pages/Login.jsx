@@ -37,13 +37,13 @@ export default function Login({ setIsAuthenticated }) {
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-lg opacity-75"></div>
             <div className="relative bg-slate-900 rounded-full p-4">
-              <img src="/logo.png" alt="HealthHub Logo" className="w-10 h-10" />
+              <img src="/logo.png" alt="JeevanSetu Logo" className="w-10 h-10" />
             </div>
           </div>
         </div>
 
         <h1 className="text-3xl font-bold text-center mb-2 text-white">Welcome Back</h1>
-        <p className="text-center text-slate-400 mb-8 text-sm">Sign in to your HealthHub account</p>
+        <p className="text-center text-slate-400 mb-8 text-sm">Sign in to your JeevanSetu account</p>
 
         {error && (
           <div className="bg-red-900/30 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 flex gap-2">

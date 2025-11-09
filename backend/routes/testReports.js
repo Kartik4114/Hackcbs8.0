@@ -31,7 +31,7 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
 
         const result = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
-            { resource_type: "auto", folder: "healthhub-test-reports" },
+            { resource_type: "auto", folder: "JeevanSetu-test-reports" },
             (error, result) => {
               if (error) reject(error)
               else resolve(result)
