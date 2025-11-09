@@ -1,8 +1,51 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Upload, Trash2, Eye, FileText, ImageIcon, Download, Calendar, Tag } from "lucide-react"
+import { Upload, Trash2, Eye, FileText, ImageIcon, Download, Calendar, Tag, Loader } from "lucide-react"
 import client from "../api/client"
+
+// PDF viewer with fallback
+const PDFViewer = ({ url, title }) => {
+  const [error, setError] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  return (
+    <div className="w-full h-full bg-slate-700/30 rounded-lg overflow-hidden flex flex-col">
+      {loading && (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <Loader className="w-8 h-8 text-cyan-400 animate-spin mx-auto mb-2" />
+            <p className="text-slate-300 text-sm">Loading PDF...</p>
+          </div>
+        </div>
+      )}
+      {error ? (
+        <div className="flex items-center justify-center h-full p-6">
+          <div className="text-center">
+            <FileText className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+            <p className="text-slate-300 mb-3">PDF preview unavailable</p>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-400 hover:text-cyan-300 text-sm underline"
+            >
+              Download PDF to view
+            </a>
+          </div>
+        </div>
+      ) : (
+        <iframe
+          src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+          className="w-full h-full border-0"
+          title={title}
+          onError={() => setError(true)}
+          onLoad={() => setLoading(false)}
+        />
+      )}
+    </div>
+  )
+}
 
 export default function Documents() {
   const [documents, setDocuments] = useState([])
@@ -263,11 +306,7 @@ export default function Documents() {
                   />
                 </div>
               ) : viewingDocument.fileType?.includes("pdf") ? (
-                <iframe
-                  src={`${viewingDocument.fileUrl}#toolbar=0`}
-                  className="w-full h-full"
-                  title={viewingDocument.title}
-                />
+                <PDFViewer url={viewingDocument.fileUrl} title={viewingDocument.title} />
               ) : (
                 <div className="p-6 text-center text-slate-400">
                   <p>Preview not available for this file type</p>

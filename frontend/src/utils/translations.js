@@ -13,7 +13,7 @@ export const translations = {
       language: "Language",
     },
     careplan: {
-      title: "CarePlan AI Summarizer",
+      title: "CarePlan Summarizer",
       subtitle: "AI-powered treatment plan generator",
       newPlan: "New Plan",
       uploadPrescription: "Upload Prescription",

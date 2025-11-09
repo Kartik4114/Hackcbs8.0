@@ -5,7 +5,8 @@ const pdfParse = require("pdf-parse")
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_API_URL =
-  process.env.GEMINI_API_URL || "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+  process.env.GEMINI_API_URL ||
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 const AI_DISCLAIMER =
   "AI-generated guidance. Please consult a licensed healthcare professional before making medical decisions."
 
@@ -215,7 +216,7 @@ async function analyzePrescriptionWithGemini(prescriptionData) {
 
     if (isFile && fileType && [".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(fileType)) {
       mediaContent = {
-        base64: content,
+        base64: content, // content is already base64 from carePlans route
         mimeType: fileType,
       }
     } else {
@@ -255,19 +256,19 @@ Output expectations:
     }
   ],
   "dietPlan": {
-    "foods_to_eat": ["Item � why it helps"],
-    "foods_to_avoid": ["Item � risk it mitigates"],
+    "foods_to_eat": ["Item – why it helps"],
+    "foods_to_avoid": ["Item – risk it mitigates"],
     "meal_schedule": "Meal timing guidance",
     "water_intake": "Liters or glasses per day"
   },
   "dosAndDonts": {
-    "dos": ["Action � benefit"],
-    "donts": ["Action � risk/why avoid"]
+    "dos": ["Action – benefit"],
+    "donts": ["Action – risk/why avoid"]
   },
-  "precautions": ["Precaution � specific trigger to watch"],
+  "precautions": ["Precaution – specific trigger to watch"],
   "followUp": "When to review with doctor and what to monitor",
-  "lifestyleChanges": ["Change � projected impact"],
-  "exerciseRecommendations": ["Exercise � duration/intensity and reason"],
+  "lifestyleChanges": ["Change – projected impact"],
+  "exerciseRecommendations": ["Exercise – duration/intensity and reason"],
   "disclaimer": "${AI_DISCLAIMER}"
 }
 
@@ -291,6 +292,7 @@ Safety:
         ".webp": "image/webp",
       }
       const mimeType = mimeTypeMap[mediaContent.mimeType] || "image/jpeg"
+
       parts.push({
         inline_data: {
           mime_type: mimeType,
@@ -324,7 +326,6 @@ Safety:
   }
 }
 
-
 module.exports = {
   analyzeTestReportWithGemini,
   analyzePrescriptionWithGemini,
@@ -332,6 +333,3 @@ module.exports = {
   extractTextFromPDF,
   convertImageToBase64,
 }
-
-
-

@@ -1,23 +1,38 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CheckCircle2, Circle, TrendingUp, AlertCircle, Calendar } from "lucide-react"
 
 export default function DailyChecklist({ checklist, planId, onChecklistUpdate }) {
-  const [items, setItems] = useState(checklist)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
+  const [dateChecklistMap, setDateChecklistMap] = useState({})
   const [viewMode, setViewMode] = useState("categories") // categories or timeline
 
+  // Initialize checklist for current date
+  useEffect(() => {
+    if (!dateChecklistMap[selectedDate]) {
+      setDateChecklistMap((prev) => ({
+        ...prev,
+        [selectedDate]: checklist.map((item) => ({ ...item, completed: false })),
+      }))
+    }
+  }, [selectedDate, checklist])
+
+  const currentDateChecklist = dateChecklistMap[selectedDate] || []
+
   const toggleComplete = (idx) => {
-    const newItems = [...items]
+    const newItems = [...currentDateChecklist]
     newItems[idx].completed = !newItems[idx].completed
-    setItems(newItems)
+    setDateChecklistMap((prev) => ({
+      ...prev,
+      [selectedDate]: newItems,
+    }))
     onChecklistUpdate?.(idx, newItems[idx].completed)
   }
 
   const categorizeItems = () => {
     const categories = {}
-    items.forEach((item) => {
+    currentDateChecklist.forEach((item) => {
       if (!categories[item.category]) {
         categories[item.category] = []
       }
@@ -41,8 +56,19 @@ export default function DailyChecklist({ checklist, planId, onChecklistUpdate })
   }
 
   const categories = categorizeItems()
-  const totalCompleted = items.filter((i) => i.completed).length
-  const completionPercentage = (totalCompleted / items.length) * 100
+  const totalCompleted = currentDateChecklist.filter((i) => i.completed).length
+  const completionPercentage =
+    currentDateChecklist.length > 0 ? (totalCompleted / currentDateChecklist.length) * 100 : 0
+
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr + "T00:00:00")
+    const today = new Date().toISOString().split("T")[0]
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0]
+
+    if (dateStr === today) return "Today"
+    if (dateStr === tomorrow) return "Tomorrow"
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" })
+  }
 
   return (
     <div className="space-y-6">
@@ -51,9 +77,9 @@ export default function DailyChecklist({ checklist, planId, onChecklistUpdate })
           <div className="flex items-center gap-3">
             <TrendingUp className="w-5 h-5 text-cyan-400" />
             <div>
-              <p className="text-sm text-slate-400">Today's Progress</p>
+              <p className="text-sm text-slate-400">{formatDate(selectedDate)}'s Progress</p>
               <p className="text-2xl font-bold text-white">
-                {totalCompleted} of {items.length}
+                {totalCompleted} of {currentDateChecklist.length}
               </p>
             </div>
           </div>
@@ -174,7 +200,7 @@ export default function DailyChecklist({ checklist, planId, onChecklistUpdate })
       {/* Timeline View */}
       {viewMode === "timeline" && (
         <div className="space-y-3">
-          {items.map((item, idx) => (
+          {currentDateChecklist.map((item, idx) => (
             <div
               key={idx}
               onClick={() => toggleComplete(idx)}
@@ -214,13 +240,13 @@ export default function DailyChecklist({ checklist, planId, onChecklistUpdate })
       )}
 
       {/* Motivation Message */}
-      {completionPercentage === 100 && (
+      {completionPercentage === 100 && currentDateChecklist.length > 0 && (
         <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-lg p-4 flex gap-3">
           <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
           <div>
             <p className="text-green-300 font-semibold">Excellent work!</p>
             <p className="text-green-300/80 text-sm mt-1">
-              You've completed all tasks for today. Keep up the great effort!
+              You've completed all tasks for {formatDate(selectedDate)}. Keep up the great effort!
             </p>
           </div>
         </div>
@@ -232,7 +258,8 @@ export default function DailyChecklist({ checklist, planId, onChecklistUpdate })
           <div>
             <p className="text-cyan-300 font-semibold">Keep going!</p>
             <p className="text-cyan-300/80 text-sm mt-1">
-              {items.length - totalCompleted} task{items.length - totalCompleted !== 1 ? "s" : ""} remaining today.
+              {currentDateChecklist.length - totalCompleted} task
+              {currentDateChecklist.length - totalCompleted !== 1 ? "s" : ""} remaining for {formatDate(selectedDate)}.
             </p>
           </div>
         </div>
