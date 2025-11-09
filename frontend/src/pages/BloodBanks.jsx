@@ -186,7 +186,8 @@ export default function BloodBanks() {
         bloodType: selectedBloodType,
         radiusKm: 50,
       })
-      setNearbyProviders(data)
+      const filteredProviders = data.filter((provider) => provider.bloodInventory[selectedBloodType] > 0)
+      setNearbyProviders(filteredProviders)
     } catch (err) {
       console.error("Error finding nearby providers:", err)
     }
@@ -238,7 +239,6 @@ export default function BloodBanks() {
   }
 
   if (user?.role === "patient") {
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
         <div className="max-w-7xl mx-auto">
@@ -278,67 +278,70 @@ export default function BloodBanks() {
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                 <Droplets className="w-6 h-6 text-cyan-400" />
-                Nearest Providers ({nearbyProviders.length})
+                Nearest Providers with {selectedBloodType} ({nearbyProviders.length})
               </h2>
               <div className="overflow-x-auto pb-4 scroll-smooth">
                 <div className="flex gap-4 min-w-max">
                   {nearbyProviders.map((provider) => (
                     <div
                       key={provider._id}
-                      className="flex-shrink-0 w-80 bg-slate-800/50 border border-slate-700 rounded-lg p-5 hover:border-cyan-500/50 transition backdrop-blur group"
+                      className="flex-shrink-0 w-80 bg-slate-800/50 border border-slate-700 rounded-lg p-5 hover:border-cyan-500/50 transition backdrop-blur group flex flex-col"
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-white group-hover:text-cyan-400 transition">
-                            {provider.organizationName}
-                          </h3>
-                          <p className="text-slate-400 text-sm">{provider.userId?.name}</p>
-                        </div>
-                        <div className="bg-cyan-500/20 px-3 py-1 rounded-full flex-shrink-0">
-                          <p className="text-cyan-400 font-bold text-sm">{provider.distance.toFixed(1)} km</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-start gap-2 text-slate-300 text-sm">
-                          <MapPin className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-                          <span>{provider.address}</span>
-                        </div>
-                        {provider.phone && (
-                          <div className="flex items-center gap-2 text-slate-300 text-sm">
-                            <Phone className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                            {provider.phone}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 pr-2">
+                            <h3 className="text-lg font-semibold text-white group-hover:text-cyan-400 transition line-clamp-2">
+                              {provider.organizationName}
+                            </h3>
+                            <p className="text-slate-400 text-sm">{provider.userId?.name}</p>
                           </div>
-                        )}
-                      </div>
+                          <div className="bg-cyan-500/20 px-3 py-1 rounded-full flex-shrink-0 whitespace-nowrap">
+                            <p className="text-cyan-400 font-bold text-sm">{provider.distance.toFixed(1)} km</p>
+                          </div>
+                        </div>
 
-                      <div className="bg-slate-700/50 rounded p-3 mb-3 border border-slate-600/50">
-                        <p className="text-slate-300 text-xs font-medium mb-2">Available Units</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-cyan-400 font-bold text-lg">{selectedBloodType}</span>
-                          <span
-                            className={`font-bold text-lg ${provider.bloodInventory[selectedBloodType] > 0 ? "text-green-400" : "text-red-400"}`}
-                          >
-                            {provider.bloodInventory[selectedBloodType] || 0}
-                          </span>
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-start gap-2 text-slate-300 text-sm">
+                            <MapPin className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
+                            <span className="line-clamp-2">{provider.address}</span>
+                          </div>
+                          {provider.phone && (
+                            <div className="flex items-center gap-2 text-slate-300 text-sm">
+                              <Phone className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                              <span className="truncate">{provider.phone}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="bg-slate-700/50 rounded p-3 mb-3 border border-slate-600/50">
+                          <p className="text-slate-300 text-xs font-medium mb-2">Available Units</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-cyan-400 font-bold text-lg">{selectedBloodType}</span>
+                            <span className="font-bold text-lg text-green-400">
+                              {provider.bloodInventory[selectedBloodType] || 0}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      {provider.available ? (
-                        <button className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-2 rounded-lg transition font-semibold flex items-center justify-center gap-2">
-                          <Check className="w-4 h-4" />
-                          Available
-                        </button>
-                      ) : (
-                        <button className="w-full bg-red-600/30 text-red-200 py-2 rounded-lg font-medium flex items-center justify-center gap-2 border border-red-500/50">
-                          <AlertCircle className="w-4 h-4" />
-                          Not Available
-                        </button>
-                      )}
+                      <button className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-2 rounded-lg transition font-semibold flex items-center justify-center gap-2 mt-auto">
+                        <Check className="w-4 h-4" />
+                        Available
+                      </button>
                     </div>
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {nearbyProviders.length === 0 && selectedBloodType && (
+            <div className="mb-8 bg-slate-800/50 border border-slate-700 rounded-lg p-8 text-center">
+              <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-3 opacity-50" />
+              <p className="text-slate-300 font-medium">
+                No providers with {selectedBloodType} blood type found nearby
+              </p>
+              <p className="text-slate-400 text-sm mt-1">Try selecting a different blood type or checking back later</p>
             </div>
           )}
 
