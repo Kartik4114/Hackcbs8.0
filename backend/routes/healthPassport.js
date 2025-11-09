@@ -47,6 +47,33 @@ const sanitizeSharePayload = (passport) => ({
   generatedAt: passport.lastUpdated,
 })
 
+const buildFormattedQRText = (data) => {
+  const lines = [
+    "HEALTH PASSPORT",
+    "==================",
+    "",
+    `Name: ${data.fullName || "N/A"}`,
+    `Blood Group: ${data.bloodGroup || "N/A"}`,
+    `Date of Birth: ${data.dateOfBirth ? new Date(data.dateOfBirth).toLocaleDateString() : "N/A"}`,
+    "",
+    `Allergies: ${data.allergies?.length > 0 ? data.allergies.join(", ") : "None reported"}`,
+    `Chronic Conditions: ${data.chronicConditions?.length > 0 ? data.chronicConditions.join(", ") : "None reported"}`,
+    `Medications: ${data.medications?.length > 0 ? data.medications.join(", ") : "None reported"}`,
+    "",
+    `Emergency Contact:`,
+    `  Name: ${data.emergencyContact?.name || "N/A"}`,
+    `  Relation: ${data.emergencyContact?.relation || "N/A"}`,
+    `  Phone: ${data.emergencyContact?.phone || "N/A"}`,
+  ]
+  return lines.join("\n")
+}
+
+router.get("/qr/view", async (req, res) => {
+  // This serves the offline QR view page that decodes the data parameter
+  // Data is passed as: ?data=BASE64URL_ENCODED_JSON
+  res.send("Use the frontend HealthPassportQRView component to handle this")
+})
+
 router.get("/share/:token", async (req, res) => {
   const passport = await HealthPassport.findOne({ "tempShare.token": req.params.token })
   if (!passport || !passport.tempShare) {
@@ -109,10 +136,15 @@ router.post("/", authMiddleware, async (req, res) => {
     passport.lastUpdated = new Date()
 
     const offlinePayload = buildOfflinePayload(passport)
-    const encoded = toBase64Url(JSON.stringify(offlinePayload))
-    const offlineQrContent = `JeevanSetu://passport/offline?data=${encoded}`
+
+    const formattedText = buildFormattedQRText(offlinePayload)
     passport.qrCodes = passport.qrCodes || {}
-    passport.qrCodes.offline = await QRCode.toDataURL(offlineQrContent, { margin: 1, width: 360 })
+    passport.qrCodes.offline = await QRCode.toDataURL(formattedText, {
+      margin: 1,
+      width: 360,
+      errorCorrectionLevel: "H",
+      type: "image/png",
+    })
     passport.offlinePayload = offlinePayload
 
     if (passport.tempShare && passport.tempShare.expiresAt < new Date()) {
@@ -145,8 +177,14 @@ router.post("/share/temporary", authMiddleware, async (req, res) => {
       url: shareUrl,
     }
 
+    const formattedText = buildFormattedQRText(passport)
     passport.qrCodes = passport.qrCodes || {}
-    passport.qrCodes.emergency = await QRCode.toDataURL(shareUrl, { margin: 1, width: 360 })
+    passport.qrCodes.emergency = await QRCode.toDataURL(formattedText, {
+      margin: 1,
+      width: 360,
+      errorCorrectionLevel: "H",
+      type: "image/png",
+    })
     await passport.save()
 
     res.json({
@@ -161,10 +199,6 @@ router.post("/share/temporary", authMiddleware, async (req, res) => {
 })
 
 module.exports = router
-const toBase64Url = (value) =>
-  Buffer.from(value)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "")
 
+const toBase64Url = (value) =>
+  Buffer.from(value).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")

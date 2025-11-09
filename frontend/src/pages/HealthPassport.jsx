@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Shield,
   Calendar,
@@ -13,6 +13,9 @@ import {
   Clock,
   Copy,
   RefreshCw,
+  Edit2,
+  CheckCircle,
+  X,
 } from "lucide-react"
 import client from "../api/client"
 
@@ -38,6 +41,8 @@ export default function HealthPassport() {
   const [shareInfo, setShareInfo] = useState(null)
   const [shareLoading, setShareLoading] = useState(false)
   const [shareCountdown, setShareCountdown] = useState("")
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [hasExistingData, setHasExistingData] = useState(false)
 
   useEffect(() => {
     fetchPassport()
@@ -68,6 +73,10 @@ export default function HealthPassport() {
       const { data } = await client.get("/health-passport")
       setPassport(data)
       if (data) {
+        const hasData = data.fullName && data.bloodGroup
+        setHasExistingData(hasData)
+        setIsEditMode(false) // Always start in view mode if data exists
+
         setFormData({
           fullName: data.fullName || "",
           dateOfBirth: data.dateOfBirth ? data.dateOfBirth.substring(0, 10) : "",
@@ -118,6 +127,8 @@ export default function HealthPassport() {
       }
       const { data } = await client.post("/health-passport", payload)
       setPassport(data)
+      setHasExistingData(true)
+      setIsEditMode(false)
       setShareInfo(null)
     } catch (err) {
       console.error("Failed to save passport:", err)
@@ -129,11 +140,12 @@ export default function HealthPassport() {
 
   const handleDownloadOfflineCard = () => {
     if (!passport?.offlinePayload) return
-    const blob = new Blob([JSON.stringify(passport.offlinePayload, null, 2)], { type: "application/json" })
+    const formattedText = formatHealthDataAsText(passport.offlinePayload)
+    const blob = new Blob([formattedText], { type: "text/plain" })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.download = "health-passport-offline.json"
+    link.download = "health-passport-offline.txt"
     link.click()
     window.URL.revokeObjectURL(url)
   }
@@ -166,7 +178,10 @@ export default function HealthPassport() {
     alert("Share link copied to clipboard")
   }
 
-  const offlineData = useMemo(() => passport?.offlinePayload || null, [passport])
+  const handleCancelEdit = () => {
+    setIsEditMode(false)
+    fetchPassport()
+  }
 
   if (loading) {
     return (
@@ -190,17 +205,54 @@ export default function HealthPassport() {
               Health Passport
             </h1>
             <p className="text-slate-400 mt-2">
-              Portable, QR-based identity with blood group, allergies, emergency contact, and more.
+              {hasExistingData
+                ? "Your portable health identity - QR-based with blood group, allergies, emergency contact, and more."
+                : "Create your portable health identity. Fill this form once, then edit anytime."}
             </p>
           </div>
           <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-4 text-sm text-slate-300">
-            <p className="font-semibold text-white mb-1">Offline Ready</p>
-            <p>Download the cached card and QR to store on your phone or print as an ID.</p>
+            <p className="font-semibold text-white mb-1">{hasExistingData ? "✓ Data Saved" : "Getting Started"}</p>
+            <p>
+              {hasExistingData
+                ? "Your health data is stored. Download QR or generate emergency share links."
+                : "Complete this form to create your digital health passport."}
+            </p>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
           <form onSubmit={handleSubmit} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-5">
+            {hasExistingData && !isEditMode && (
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
+                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  Your Health Information
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsEditMode(true)}
+                  className="flex items-center gap-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 px-4 py-2 rounded-lg transition"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit
+                </button>
+              </div>
+            )}
+
+            {isEditMode && hasExistingData && (
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
+                <h2 className="text-xl font-semibold text-white">Edit Health Information</h2>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg transition"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </button>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-semibold text-slate-300 mb-2">Full Name</label>
               <input
@@ -209,7 +261,8 @@ export default function HealthPassport() {
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="John Carter"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none"
+                disabled={hasExistingData && !isEditMode}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -222,7 +275,8 @@ export default function HealthPassport() {
                   name="dateOfBirth"
                   value={formData.dateOfBirth}
                   onChange={handleChange}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none"
+                  disabled={hasExistingData && !isEditMode}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
@@ -231,7 +285,8 @@ export default function HealthPassport() {
                   name="bloodGroup"
                   value={formData.bloodGroup}
                   onChange={handleChange}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none"
+                  disabled={hasExistingData && !isEditMode}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 >
                   <option value="">Select</option>
@@ -256,7 +311,8 @@ export default function HealthPassport() {
                   value={formData[name]}
                   onChange={handleChange}
                   placeholder={placeholder}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none h-20"
+                  disabled={hasExistingData && !isEditMode}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none h-20 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <p className="text-xs text-slate-500 mt-1">Separate entries using commas.</p>
               </div>
@@ -271,7 +327,8 @@ export default function HealthPassport() {
                   value={formData.emergencyName}
                   onChange={handleChange}
                   placeholder="Name"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none"
+                  disabled={hasExistingData && !isEditMode}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -283,7 +340,8 @@ export default function HealthPassport() {
                   value={formData.emergencyRelation}
                   onChange={handleChange}
                   placeholder="Mother / Partner"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none"
+                  disabled={hasExistingData && !isEditMode}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
@@ -294,7 +352,8 @@ export default function HealthPassport() {
                   value={formData.emergencyPhone}
                   onChange={handleChange}
                   placeholder="+91 98765 43210"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none"
+                  disabled={hasExistingData && !isEditMode}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-cyan-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -302,12 +361,16 @@ export default function HealthPassport() {
 
             <button
               type="submit"
-              disabled={saving}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-60"
+              disabled={saving || (hasExistingData && !isEditMode)}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <>
                   <RefreshCw className="w-5 h-5 animate-spin" /> Saving...
+                </>
+              ) : isEditMode ? (
+                <>
+                  <CheckCircle className="w-5 h-5" /> Update Passport
                 </>
               ) : (
                 <>
@@ -339,13 +402,17 @@ export default function HealthPassport() {
                 <InfoTag icon={AlertTriangle} label="Allergies" items={formData.allergies} />
                 <InfoTag icon={Activity} label="Chronic" items={formData.chronicConditions} />
                 <InfoTag icon={HeartPulse} label="Medications" items={formData.medications} />
-                <InfoTag icon={Phone} label="Emergency" items={`${formData.emergencyName} • ${formData.emergencyPhone}`} />
+                <InfoTag
+                  icon={Phone}
+                  label="Emergency"
+                  items={`${formData.emergencyName} • ${formData.emergencyPhone}`}
+                />
               </div>
 
               <div className="mt-6 bg-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 {passport?.qrCodes?.offline ? (
                   <img
-                    src={passport.qrCodes.offline}
+                    src={passport.qrCodes.offline || "/placeholder.svg"}
                     alt="Offline QR"
                     className="w-40 h-40 object-contain mx-auto sm:mx-0"
                   />
@@ -355,9 +422,10 @@ export default function HealthPassport() {
                   </div>
                 )}
                 <div className="flex-1 text-slate-900 space-y-2">
-                  <h3 className="font-semibold text-lg">Offline QR</h3>
+                  <h3 className="font-semibold text-lg">Offline QR Code</h3>
                   <p className="text-sm text-slate-600">
-                    Contains essential medical info encoded locally. Store it on your phone or print it on a card/band.
+                    Scan this QR to view your health details in a clean, formatted view. Works offline and can be
+                    printed or stored on your phone.
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <button
@@ -392,8 +460,8 @@ export default function HealthPassport() {
                 </div>
                 <button
                   onClick={handleGenerateShare}
-                  disabled={shareLoading}
-                  className="bg-gradient-to-r from-orange-500 to-pink-500 px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+                  disabled={shareLoading || !hasExistingData}
+                  className="bg-gradient-to-r from-orange-500 to-pink-500 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 disabled:opacity-50"
                 >
                   {shareLoading ? (
                     <>
@@ -424,7 +492,11 @@ export default function HealthPassport() {
                   </div>
                   <div className="bg-white rounded-xl p-4 flex flex-col items-center gap-3">
                     {shareInfo.qrCode ? (
-                      <img src={shareInfo.qrCode} alt="Emergency QR" className="w-40 h-40 object-contain" />
+                      <img
+                        src={shareInfo.qrCode || "/placeholder.svg"}
+                        alt="Emergency QR"
+                        className="w-40 h-40 object-contain"
+                      />
                     ) : (
                       <div className="w-40 h-40 bg-slate-200 rounded-xl flex items-center justify-center text-slate-500">
                         Pending
@@ -441,7 +513,7 @@ export default function HealthPassport() {
                 </div>
               ) : (
                 <p className="text-sm text-slate-500">
-                  No active emergency share link. Click “Share for 30 mins” to generate one when needed.
+                  No active emergency share link. Click "Share for 30 mins" to generate one when needed.
                 </p>
               )}
             </div>
@@ -451,17 +523,19 @@ export default function HealthPassport() {
         <div className="bg-slate-900/30 border border-slate-800 rounded-2xl p-6 grid md:grid-cols-3 gap-6">
           {[
             {
-              title: "Offline Ready",
-              description: "Store the offline JSON + QR in your phone’s wallet or print it on a physical ID card.",
-            },
-            {
-              title: "Works with Care Plans & Blood Banks",
-              description: "Hospitals can scan the same ID to access your critical information before treatments.",
-            },
-            {
-              title: "Privacy Focused",
+              title: "Fill Once, Edit Anytime",
               description:
-                "Offline QR is stored locally. Emergency links auto-expire after 30 minutes and can be regenerated.",
+                "Complete your health profile once. It's saved securely and you can update it whenever needed.",
+            },
+            {
+              title: "Scannable QR Codes",
+              description:
+                "Download and store your QR code. Anyone with a phone can scan it to view your health details instantly.",
+            },
+            {
+              title: "Emergency Share Links",
+              description:
+                "Generate 30-minute emergency share links for hospitals. They auto-expire and keep your data secure.",
             },
           ].map((item) => (
             <div key={item.title} className="bg-slate-800/40 rounded-xl border border-slate-700 p-4">
@@ -488,3 +562,26 @@ function InfoTag({ icon: Icon, label, items }) {
   )
 }
 
+function formatHealthDataAsText(data) {
+  const lines = [
+    "=== HEALTH PASSPORT ===",
+    "",
+    `Name: ${data.fullName || "N/A"}`,
+    `Blood Group: ${data.bloodGroup || "N/A"}`,
+    `Date of Birth: ${data.dateOfBirth ? new Date(data.dateOfBirth).toLocaleDateString() : "N/A"}`,
+    "",
+    `Allergies: ${Array.isArray(data.allergies) && data.allergies.length > 0 ? data.allergies.join(", ") : "None reported"}`,
+    "",
+    `Chronic Conditions: ${Array.isArray(data.chronicConditions) && data.chronicConditions.length > 0 ? data.chronicConditions.join(", ") : "None reported"}`,
+    "",
+    `Medications: ${Array.isArray(data.medications) && data.medications.length > 0 ? data.medications.join(", ") : "None reported"}`,
+    "",
+    `Emergency Contact:`,
+    `  Name: ${data.emergencyContact?.name || "N/A"}`,
+    `  Relation: ${data.emergencyContact?.relation || "N/A"}`,
+    `  Phone: ${data.emergencyContact?.phone || "N/A"}`,
+    "",
+    "======================",
+  ]
+  return lines.join("\n")
+}

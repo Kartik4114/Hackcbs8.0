@@ -184,7 +184,7 @@ export default function TestReportUpload({ onReportCreated, language, onCancel }
             {loading ? (
               <>
                 <Loader className="w-5 h-5 animate-spin" />
-                Analyzing with Gemini AI...
+                Analyzing...
               </>
             ) : (
               <>

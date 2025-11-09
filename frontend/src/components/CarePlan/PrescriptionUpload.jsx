@@ -55,7 +55,7 @@ export default function PrescriptionUpload({ onPlanCreated, language, onCancel }
           <div className="inline-flex items-center justify-center">
             <Loader className="w-8 h-8 text-cyan-400 animate-spin" />
           </div>
-          <p className="text-white font-semibold mt-4">Analyzing with Gemini AI...</p>
+          <p className="text-white font-semibold mt-4">Analyzing...</p>
           <p className="text-slate-400 text-sm mt-2">Extracting prescription details</p>
         </div>
       </div>

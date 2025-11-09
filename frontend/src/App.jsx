@@ -13,6 +13,7 @@ import CarePlans from "./pages/CarePlans"
 import TestReports from "./pages/TestReports"
 import HealthPassport from "./pages/HealthPassport"
 import HealthPassportShare from "./pages/HealthPassportShare"
+import HealthPassportQRView from "./pages/HealthPassportQR"
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"))
@@ -40,6 +41,7 @@ function App() {
         <Route path="/test-reports" element={isAuthenticated ? <TestReports /> : <Navigate to="/login" />} />
         <Route path="/health-passport" element={isAuthenticated ? <HealthPassport /> : <Navigate to="/login" />} />
         <Route path="/passport/share/:token" element={<HealthPassportShare />} />
+        <Route path="/passport/qr/view" element={<HealthPassportQRView />} />
         <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
       </Routes>
     </Router>
