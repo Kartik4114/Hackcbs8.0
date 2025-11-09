@@ -85,7 +85,7 @@ export default function Navigation({ setIsAuthenticated }) {
               <Link
                 key={path}
                 to={path}
-                className="block px-4 py-3 hover:bg-blue-600/20 rounded-lg flex items-center space-x-2 text-slate-300 hover:text-cyan-300 transition-all duration-200 border border-transparent hover:border-cyan-500/30"
+                className="px-4 py-3 hover:bg-blue-600/20 rounded-lg flex items-center space-x-2 text-slate-300 hover:text-cyan-300 transition-all duration-200 border border-transparent hover:border-cyan-500/30"
               >
                 <Icon className="w-4 h-4" />
                 <span className="font-medium">{label}</span>
