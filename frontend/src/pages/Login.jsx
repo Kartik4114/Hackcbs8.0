@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import axios from "axios"
 import { Heart, Mail, Lock } from "lucide-react"
+import client from "../api/client"
 
 export default function Login({ setIsAuthenticated }) {
   const [email, setEmail] = useState("")
@@ -18,9 +18,9 @@ export default function Login({ setIsAuthenticated }) {
     setError("")
 
     try {
-      const response = await axios.post("/api/auth/login", { email, password })
-      localStorage.setItem("token", response.data.token)
-      localStorage.setItem("user", JSON.stringify(response.data.user))
+      const { data } = await client.post("/auth/login", { email, password })
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("user", JSON.stringify(data.user))
       setIsAuthenticated(true)
       navigate("/dashboard")
     } catch (err) {

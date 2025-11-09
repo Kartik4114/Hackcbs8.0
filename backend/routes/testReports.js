@@ -8,6 +8,9 @@ const cloudinary = require("../config/cloudinary")
 const fs = require("fs")
 const path = require("path")
 
+const AI_OUTPUT_DISCLAIMER =
+  "AI-generated guidance. Please consult a licensed healthcare professional before making medical decisions."
+
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage() })
 
@@ -61,6 +64,8 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
       fileType: fileType,
     })
 
+    const disclaimer = aiAnalysis.disclaimer || AI_OUTPUT_DISCLAIMER
+
     const testReport = new TestReport({
       userId: req.userId,
       testFile: {
@@ -71,6 +76,7 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
       aiAnalysis: {
         summary: aiAnalysis.summary,
         overallAssessment: aiAnalysis.overallAssessment,
+        disclaimer,
         generatedAt: new Date(),
       },
       redFlags: aiAnalysis.redFlags || [],

@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import { Upload, Trash2, Eye, FileText, ImageIcon, Download, Calendar, Tag } from "lucide-react"
+import client from "../api/client"
 
 export default function Documents() {
   const [documents, setDocuments] = useState([])
@@ -19,11 +19,8 @@ export default function Documents() {
 
   const fetchDocuments = async () => {
     try {
-      const token = localStorage.getItem("token")
-      const response = await axios.get("/api/documents", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setDocuments(response.data)
+      const { data } = await client.get("/documents")
+      setDocuments(data)
     } catch (err) {
       console.error("Error fetching documents:", err)
     } finally {
@@ -41,10 +38,8 @@ export default function Documents() {
       formData.append("file", file)
       formData.append("title", title || file.name)
 
-      const token = localStorage.getItem("token")
-      await axios.post("/api/documents/upload", formData, {
+      await client.post("/documents/upload", formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       })
@@ -62,10 +57,7 @@ export default function Documents() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure?")) {
       try {
-        const token = localStorage.getItem("token")
-        await axios.delete(`/api/documents/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        await client.delete(`/documents/${id}`)
         fetchDocuments()
       } catch (err) {
         console.error("Error deleting document:", err)

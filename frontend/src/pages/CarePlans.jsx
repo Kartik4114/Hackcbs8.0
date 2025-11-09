@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import { Plus, Upload, Trash2, Pill, CheckCircle2, Settings } from "lucide-react"
 import PrescriptionUpload from "../components/CarePlan/PrescriptionUpload"
 import TreatmentPlanView from "../components/CarePlan/TreatmentPlanView"
@@ -9,6 +8,7 @@ import AISummarizer from "../components/CarePlan/AISummarizer"
 import TreatmentPlanGenerator from "../components/CarePlan/TreatmentPlanGenerator"
 import VoiceAndLanguage from "../components/CarePlan/VoiceAndLanguage"
 import { getTranslation } from "../utils/translations"
+import client from "../api/client"
 
 export default function CarePlans() {
   const [plans, setPlans] = useState([])
@@ -28,11 +28,8 @@ export default function CarePlans() {
 
   const fetchPlans = async () => {
     try {
-      const token = localStorage.getItem("token")
-      const response = await axios.get("/api/care-plans", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setPlans(response.data)
+      const { data } = await client.get("/care-plans")
+      setPlans(data)
     } catch (err) {
       console.error("Error fetching care plans:", err)
     } finally {
@@ -42,7 +39,6 @@ export default function CarePlans() {
 
   const handleNewPlan = async (planData) => {
     try {
-      const token = localStorage.getItem("token")
       const formData = new FormData()
 
       formData.append("language", planData.language)
@@ -53,14 +49,13 @@ export default function CarePlans() {
         formData.append("prescriptionText", planData.prescriptionText)
       }
 
-      const response = await axios.post("/api/care-plans", formData, {
+      const { data } = await client.post("/care-plans", formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       })
 
-      setPlans([response.data, ...plans])
+      setPlans([data, ...plans])
       setActiveView("overview")
     } catch (err) {
       console.error("Error creating care plan:", err)
@@ -71,10 +66,7 @@ export default function CarePlans() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this care plan?")) {
       try {
-        const token = localStorage.getItem("token")
-        await axios.delete(`/api/care-plans/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        await client.delete(`/care-plans/${id}`)
         fetchPlans()
         setSelectedPlan(null)
       } catch (err) {

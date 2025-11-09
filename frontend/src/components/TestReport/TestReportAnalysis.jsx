@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { ChevronLeft, AlertCircle, CheckCircle2, TrendingUp, Volume2, Copy, Share2, Download } from "lucide-react"
+import { AI_DISCLAIMER_TEXT } from "../../utils/constants"
 
 export default function TestReportAnalysis({ report, language, onBack }) {
   const [activeTab, setActiveTab] = useState("overview")
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const disclaimerText = report.aiAnalysis?.disclaimer || AI_DISCLAIMER_TEXT
 
   const speakText = (text) => {
     if ("speechSynthesis" in window) {
@@ -38,6 +40,14 @@ export default function TestReportAnalysis({ report, language, onBack }) {
           <p className="text-slate-400 text-sm mt-1">
             {report.testLab} • {new Date(report.dateOfTest).toLocaleDateString()}
           </p>
+        </div>
+      </div>
+
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex gap-3 items-start">
+        <AlertCircle className="w-5 h-5 text-amber-300 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-amber-100 space-y-1">
+          <p className="uppercase tracking-wide text-xs font-semibold text-amber-200">AI-generated insight</p>
+          <p className="leading-relaxed">{disclaimerText}</p>
         </div>
       </div>
 

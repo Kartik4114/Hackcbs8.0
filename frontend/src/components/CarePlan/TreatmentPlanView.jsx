@@ -5,10 +5,12 @@ import { ArrowLeft, Volume2, Download, Apple, CheckCircle2, AlertCircle } from "
 import MedicineSchedule from "./MedicineSchedule"
 import DailyChecklist from "./DailyChecklist"
 import FamilySharing from "./FamilySharing"
+import { AI_DISCLAIMER_TEXT } from "../../utils/constants"
 
 export default function TreatmentPlanView({ plan, language, onBack }) {
   const [activeTab, setActiveTab] = useState("overview")
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const disclaimerText = plan.aiSummary?.disclaimer || AI_DISCLAIMER_TEXT
 
   const speak = (text) => {
     if (!window.speechSynthesis) return
@@ -70,6 +72,14 @@ export default function TreatmentPlanView({ plan, language, onBack }) {
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex gap-3 items-start">
+        <AlertCircle className="w-5 h-5 text-amber-300 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-amber-100 space-y-1">
+          <p className="uppercase tracking-wide text-xs font-semibold text-amber-200">AI-generated guidance</p>
+          <p className="leading-relaxed">{disclaimerText}</p>
         </div>
       </div>
 

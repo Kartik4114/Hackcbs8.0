@@ -8,6 +8,9 @@ const cloudinary = require("../config/cloudinary")
 const fs = require("fs")
 const path = require("path")
 
+const AI_OUTPUT_DISCLAIMER =
+  "AI-generated guidance. Please consult a licensed healthcare professional before making medical decisions."
+
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage() })
 
@@ -56,6 +59,7 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
       filename: filename,
       isFile: !!req.file,
     })
+    const disclaimer = aiAnalysis.disclaimer || AI_OUTPUT_DISCLAIMER
 
     const medicineSchedule = (aiAnalysis.medicines || []).map((med) => ({
       medicineName: med.name || "Medicine",
@@ -88,6 +92,7 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
       aiSummary: {
         condition: aiAnalysis.condition || "Health Management",
         summary: aiAnalysis.summary || "",
+        disclaimer,
       },
       medicineSchedule,
       dietPlan,

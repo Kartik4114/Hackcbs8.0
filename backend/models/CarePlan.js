@@ -16,6 +16,7 @@ const carePlanSchema = new mongoose.Schema({
   aiSummary: {
     condition: String,
     summary: String,
+    disclaimer: String,
   },
 
   medicineSchedule: [

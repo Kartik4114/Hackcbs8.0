@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import { Plus, Upload, Trash2, AlertCircle, CheckCircle2, Settings, FileUp } from "lucide-react"
 import TestReportUpload from "../components/TestReport/TestReportUpload"
 import TestReportAnalysis from "../components/TestReport/TestReportAnalysis"
+import client from "../api/client"
 
 export default function TestReports() {
   const [reports, setReports] = useState([])
@@ -24,11 +24,8 @@ export default function TestReports() {
 
   const fetchReports = async () => {
     try {
-      const token = localStorage.getItem("token")
-      const response = await axios.get("http://localhost:5000/api/test-reports", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setReports(response.data)
+      const { data } = await client.get("/test-reports")
+      setReports(data)
     } catch (err) {
       console.error("Error fetching test reports:", err)
     } finally {
@@ -38,7 +35,6 @@ export default function TestReports() {
 
   const handleNewReport = async (reportData) => {
     try {
-      const token = localStorage.getItem("token")
       const formData = new FormData()
       formData.append("testType", reportData.testType)
       formData.append("dateOfTest", reportData.dateOfTest)
@@ -52,14 +48,13 @@ export default function TestReports() {
         formData.append("testContent", reportData.testContent)
       }
 
-      const response = await axios.post("http://localhost:5000/api/test-reports", formData, {
+      const { data } = await client.post("/test-reports", formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       })
 
-      setReports([response.data, ...reports])
+      setReports([data, ...reports])
       setActiveView("overview")
     } catch (err) {
       console.error("Error creating test report:", err)
@@ -70,10 +65,7 @@ export default function TestReports() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this test report?")) {
       try {
-        const token = localStorage.getItem("token")
-        await axios.delete(`http://localhost:5000/api/test-reports/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        await client.delete(`/test-reports/${id}`)
         fetchReports()
         setSelectedReport(null)
       } catch (err) {

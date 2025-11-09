@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import axios from "axios"
 import { Heart, Mail, Lock, User, Shield } from "lucide-react"
+import client from "../api/client"
 
 export default function Register({ setIsAuthenticated }) {
   const [formData, setFormData] = useState({
@@ -26,9 +26,9 @@ export default function Register({ setIsAuthenticated }) {
     setError("")
 
     try {
-      const response = await axios.post("/api/auth/register", formData)
-      localStorage.setItem("token", response.data.token)
-      localStorage.setItem("user", JSON.stringify(response.data.user))
+      const { data } = await client.post("/auth/register", formData)
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("user", JSON.stringify(data.user))
       setIsAuthenticated(true)
       navigate("/dashboard")
     } catch (err) {

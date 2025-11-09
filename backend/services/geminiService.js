@@ -4,7 +4,10 @@ const path = require("path")
 const pdfParse = require("pdf-parse")
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+const GEMINI_API_URL =
+  process.env.GEMINI_API_URL || "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+const AI_DISCLAIMER =
+  "AI-generated guidance. Please consult a licensed healthcare professional before making medical decisions."
 
 async function extractTextFromPDF(filePath) {
   try {
@@ -52,70 +55,103 @@ async function analyzeTestReportWithGemini(testData) {
       mediaContent = {
         type: "image",
         base64: content,
+        mimeType: fileType,
       }
     } else {
       contentForPrompt = content
     }
 
-    const parts = [
-      {
-        text: `You are a medical AI assistant. Analyze the following ${testType} test report and provide a comprehensive analysis in JSON format.
+    const transcriptContext = mediaContent
+      ? `An image of the ${testType || "diagnostic"} report is attached via inline data. Only describe findings that are clearly visible—do NOT invent numbers.`
+      : `---BEGIN REPORT TRANSCRIPT---
+${contentForPrompt}
+---END REPORT TRANSCRIPT---`
 
-${
-  mediaContent
-    ? `[IMAGE ATTACHED: Medical test report image for ${testType}]`
-    : `Test Report Content:\n${contentForPrompt}`
-}
+    const analysisPrompt = `You are a board-certified clinical pathologist tasked with producing a precise, evidence-backed explanation of a ${
+      testType || "diagnostic"
+    } report for patients.
 
-Please analyze and provide the response ONLY as valid JSON (no markdown, no code blocks) with this exact structure:
+Context:
+- Test type: ${testType || "Not specified"}
+- Input format: ${mediaContent ? "Scanned/photographed report" : "Extracted plain text"}
+- Data fidelity: assume OCR may have noise; quote only values you can see.
+
+${transcriptContext}
+
+Output requirements (STRICT):
+1. Base every statement on the provided data and include the actual parameter names, numeric values, and units when available. Avoid vague phrases like "some levels are high".
+2. When no data exists for a parameter, return an empty array and explicitly mention "No clear data provided" inside the relevant description so the user knows why it is empty.
+3. All recommendations must include a rationale tied to a measurement (e.g., "Repeat HbA1c in 3 months because current value 8.2% > 5.6%").
+4. Highlight critical findings before moderate ones by using the severity field.
+5. Keep language understandable to patients while retaining clinical accuracy.
+
+Return ONLY valid JSON (no markdown, no extra commentary) that matches this schema exactly:
 {
-  "summary": "Brief overview of the test results (2-3 sentences)",
-  "overallAssessment": "Overall health assessment based on the test",
+  "summary": "2-3 sentence overview referencing concrete values (e.g., \"Fasting glucose 148 mg/dL is above the 100 mg/dL goal...\")",
+  "overallAssessment": "Plain-language explanation that ties multiple findings together",
   "redFlags": [
     {
       "parameter": "Test parameter name",
-      "value": "Actual value from test",
-      "normalRange": "Normal range for this parameter",
+      "value": "Actual value with units",
+      "normalRange": "Normal range from report or best-practice guidelines",
       "severity": "critical|high|moderate",
-      "recommendation": "What to do about this",
-      "description": "Explanation of why this is a concern"
+      "recommendation": "Clear clinical next action",
+      "description": "Why this matters, referencing the measurement"
     }
   ],
   "positiveFindings": [
     {
       "parameter": "Normal parameter name",
-      "value": "Value",
+      "value": "Value with units",
       "status": "Normal/Healthy",
-      "description": "Why this is good"
+      "description": "Explain why it is within target referencing the threshold"
     }
   ],
   "balancingRecommendations": [
     {
-      "issue": "Issue identified",
-      "currentState": "Current condition",
-      "targetState": "Desired condition",
-      "actionItems": ["Action 1", "Action 2", "Action 3"],
-      "timeline": "Suggested timeline",
+      "issue": "Issue identified (e.g., \"Elevated LDL\")",
+      "currentState": "Describe the current measurement/value",
+      "targetState": "Quantified goal or range",
+      "actionItems": ["Action 1 with rationale", "Action 2 with rationale"],
+      "timeline": "Specific timeframe such as \"4-6 weeks\"",
       "priority": "high|medium|low"
     }
   ],
   "medicalAdvice": {
-    "nextSteps": ["Step 1", "Step 2"],
-    "followUpTests": ["Test 1", "Test 2"],
-    "consultSpecialist": ["Specialist 1", "Specialist 2"],
-    "precautions": ["Precaution 1", "Precaution 2"],
-    "lifestyle": ["Lifestyle change 1", "Lifestyle change 2"]
-  }
+    "nextSteps": ["Action — reason tied to data"],
+    "followUpTests": ["Test — reason it helps"],
+    "consultSpecialist": ["Specialist — why consultation is needed"],
+    "precautions": ["Precaution — what it prevents"],
+    "lifestyle": ["Habit change — expected impact"]
+  },
+  "disclaimer": "${AI_DISCLAIMER}"
 }
 
-Important: Return ONLY valid JSON, no additional text or markdown.`,
+Quality guardrails:
+- Cite at least two concrete measurements inside the summary or overallAssessment.
+- Never fabricate ranges/values; if unknown, state \"Not specified\".
+- The disclaimer text must match exactly as provided above.
+- Respond with valid JSON only.`
+
+    const parts = [
+      {
+        text: analysisPrompt,
       },
     ]
 
     if (mediaContent) {
+      const mimeTypeMap = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+      }
+      const mimeType = mimeTypeMap[mediaContent.mimeType] || "image/jpeg"
+
       parts.push({
         inline_data: {
-          mime_type: "image/jpeg",
+          mime_type: mimeType,
           data: mediaContent.base64,
         },
       })
@@ -161,6 +197,7 @@ Important: Return ONLY valid JSON, no additional text or markdown.`,
 
     const analysisText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || "{}"
     const analysis = JSON.parse(analysisText.replace(/```json\n?|\n?```/g, ""))
+    analysis.disclaimer = analysis.disclaimer || AI_DISCLAIMER
 
     return analysis
   } catch (err) {
@@ -173,44 +210,57 @@ async function analyzePrescriptionWithGemini(prescriptionData) {
   try {
     const { content, filename, isFile } = prescriptionData
 
-    const prompt = `You are a medical AI assistant specializing in prescription analysis. Extract and analyze the prescription/doctor notes thoroughly. 
+    const prompt = `You are an experienced clinical pharmacist. Extract EVERY concrete instruction from the prescription or doctor notes below and convert it into structured patient-friendly guidance.
 
-If the provided content appears to be a prescription or medical document, extract ALL available information. If some information is not clearly visible, make reasonable clinical suggestions based on common medical practices.
+Source details:
+- Filename (if supplied): ${filename || "N/A"}
+- Input format: ${isFile ? "Uploaded document" : "Plain text"}
 
-Provide response ONLY as valid JSON (no markdown, no code blocks) with this structure:
+Prescription/Doctor Notes Content:
+---BEGIN DOCUMENT---
+${content}
+---END DOCUMENT---
+
+Output expectations:
+1. Use the exact medicine names when visible. If abbreviated, expand common forms (e.g., \"Met\" -> \"Metformin\").
+2. Dosage, frequency, duration, and timing must retain the units and cadence given in the document.
+3. Diet, lifestyle, and exercise advice must include a short justification (\"what it helps\") in the same string.
+4. If the prescription is unclear in any area, explicitly mention \"Not specified in document\" for that field instead of inventing data.
+5. Return ONLY valid JSON (no markdown) that matches this schema:
 {
-  "condition": "Main health condition mentioned (or inferred from medicines/symptoms)",
-  "summary": "Detailed summary of the prescription and recommendations (3-4 sentences)",
+  "condition": "Primary condition or symptom focus. Mention if inferred.",
+  "summary": "3-4 sentences weaving together how each medicine/direction addresses the condition. Cite key medicine names.",
   "medicines": [
     {
-      "name": "Medicine name (extract or infer from abbreviations)",
-      "dosage": "Dosage amount (e.g., 500mg, 10ml)",
-      "frequency": "How often to take (e.g., twice daily, three times daily)",
-      "timing": ["Morning", "Evening", "Noon"],
-      "duration": "How long to take (e.g., 10 days, 1 month)",
-      "notes": "Additional notes or warnings"
+      "name": "Medicine name",
+      "dosage": "Amount + unit",
+      "frequency": "Cadence such as 'Twice daily'",
+      "timing": ["List of times such as Morning, Noon, Evening"],
+      "duration": "How long to continue. Use 'Not specified' if missing.",
+      "notes": "Purpose or caution (e.g., 'Take after meals to reduce GI upset')"
     }
   ],
   "dietPlan": {
-    "foods_to_eat": ["Food 1 - with reason", "Food 2 - with reason"],
-    "foods_to_avoid": ["Food 1 - with reason", "Food 2 - with reason"],
-    "meal_schedule": "Recommended meal times and frequency",
-    "water_intake": "Recommended daily water intake"
+    "foods_to_eat": ["Item — why it helps"],
+    "foods_to_avoid": ["Item — risk it mitigates"],
+    "meal_schedule": "Meal timing guidance",
+    "water_intake": "Liters or glasses per day"
   },
   "dosAndDonts": {
-    "dos": ["Do 1 - specific action", "Do 2 - specific action"],
-    "donts": ["Don't 1 - specific action", "Don't 2 - specific action"]
+    "dos": ["Action — benefit"],
+    "donts": ["Action — risk/why avoid"]
   },
-  "precautions": ["Precaution 1 with explanation", "Precaution 2 with explanation"],
-  "followUp": "Follow-up recommendations and timeline",
-  "lifestyleChanges": ["Change 1 - detailed", "Change 2 - detailed"],
-  "exerciseRecommendations": ["Exercise 1 - with duration", "Exercise 2 - with duration"]
+  "precautions": ["Precaution — specific trigger to watch"],
+  "followUp": "When to review with doctor and what to monitor",
+  "lifestyleChanges": ["Change — projected impact"],
+  "exerciseRecommendations": ["Exercise — duration/intensity and reason"],
+  "disclaimer": "${AI_DISCLAIMER}"
 }
 
-Prescription/Doctor Notes Content:
-${content}
-
-Return ONLY valid JSON, no additional text. If any section is unclear, make educated clinical suggestions.`
+Safety:
+- Never suggest a medicine that is not present in the document.
+- Flag missing information transparently.
+- Use the disclaimer string exactly as provided.`
 
     const response = await axios.post(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       contents: [
@@ -232,6 +282,7 @@ Return ONLY valid JSON, no additional text. If any section is unclear, make educ
 
     const analysisText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || "{}"
     const analysis = JSON.parse(analysisText.replace(/```json\n?|\n?```/g, ""))
+    analysis.disclaimer = analysis.disclaimer || AI_DISCLAIMER
 
     return analysis
   } catch (err) {

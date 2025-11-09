@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import axios from "axios"
 import { MapPin, Phone, Droplet, Plus, Edit, Navigation, Droplets, AlertCircle, Check } from "lucide-react"
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
+import client from "../api/client"
 
 const isValidCoordinate = (lat, lon) => Number.isFinite(lat) && Number.isFinite(lon)
 
@@ -157,8 +157,8 @@ export default function BloodBanks() {
 
   const fetchProviders = async () => {
     try {
-      const response = await axios.get("/api/blood-banks")
-      setBanks(response.data)
+      const { data } = await client.get("/blood-banks")
+      setBanks(data)
     } catch (err) {
       console.error("Error fetching providers:", err)
     } finally {
@@ -168,13 +168,10 @@ export default function BloodBanks() {
 
   const fetchMyProviderEntry = async () => {
     try {
-      const token = localStorage.getItem("token")
-      const response = await axios.get("/api/blood-banks/my-entry", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setMyProviderEntry(response.data)
-      if (response.data) {
-        setInventoryData(response.data.bloodInventory)
+      const { data } = await client.get("/blood-banks/my-entry")
+      setMyProviderEntry(data)
+      if (data) {
+        setInventoryData(data.bloodInventory)
       }
     } catch (err) {
       console.log("No entry found")
@@ -183,13 +180,13 @@ export default function BloodBanks() {
 
   const findNearbyProviders = async (lat, lon) => {
     try {
-      const response = await axios.post("/api/blood-banks/nearby", {
+      const { data } = await client.post("/blood-banks/nearby", {
         latitude: lat,
         longitude: lon,
         bloodType: selectedBloodType,
         radiusKm: 50,
       })
-      setNearbyProviders(response.data)
+      setNearbyProviders(data)
     } catch (err) {
       console.error("Error finding nearby providers:", err)
     }
@@ -211,10 +208,7 @@ export default function BloodBanks() {
   const handleCreateSubmit = async (e) => {
     e.preventDefault()
     try {
-      const token = localStorage.getItem("token")
-      await axios.post("/api/blood-banks/create", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await client.post("/blood-banks/create", formData)
       setFormData({
         organizationName: "",
         address: "",
@@ -234,14 +228,7 @@ export default function BloodBanks() {
   const handleUpdateInventory = async (e) => {
     e.preventDefault()
     try {
-      const token = localStorage.getItem("token")
-      await axios.put(
-        "/api/blood-banks/update-inventory",
-        { bloodInventory: inventoryData },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      )
+      await client.put("/blood-banks/update-inventory", { bloodInventory: inventoryData })
       fetchMyProviderEntry()
       setShowUpdateForm(false)
       fetchProviders()

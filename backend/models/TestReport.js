@@ -18,6 +18,7 @@ const testReportSchema = new mongoose.Schema({
     summary: String,
     overallAssessment: String,
     generatedAt: Date,
+    disclaimer: String,
   },
 
   redFlags: [

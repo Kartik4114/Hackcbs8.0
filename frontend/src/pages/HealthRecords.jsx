@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import { Plus, Trash2 } from "lucide-react"
+import client from "../api/client"
 
 export default function HealthRecords() {
   const [records, setRecords] = useState([])
@@ -23,11 +23,8 @@ export default function HealthRecords() {
 
   const fetchRecords = async () => {
     try {
-      const token = localStorage.getItem("token")
-      const response = await axios.get("/api/health-records", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setRecords(response.data)
+      const { data } = await client.get("/health-records")
+      setRecords(data)
     } catch (err) {
       console.error("Error fetching records:", err)
     } finally {
@@ -38,10 +35,7 @@ export default function HealthRecords() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const token = localStorage.getItem("token")
-      await axios.post("/api/health-records", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await client.post("/health-records", formData)
       setFormData({ recordType: "appointment", title: "", description: "", doctor: "", hospital: "", notes: "" })
       setShowForm(false)
       fetchRecords()
@@ -53,10 +47,7 @@ export default function HealthRecords() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure?")) {
       try {
-        const token = localStorage.getItem("token")
-        await axios.delete(`/api/health-records/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        await client.delete(`/health-records/${id}`)
         fetchRecords()
       } catch (err) {
         console.error("Error deleting record:", err)

@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import axios from "axios"
 import { FileText, Droplet, Heart, Briefcase, TrendingUp, Clock, CheckCircle2, Activity } from "lucide-react"
+import client from "../api/client"
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -25,14 +25,11 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem("token")
-      const headers = { Authorization: `Bearer ${token}` }
-
       const [recordsRes, docsRes, plansRes, banksRes] = await Promise.all([
-        axios.get("/api/health-records", { headers }),
-        axios.get("/api/documents", { headers }),
-        axios.get("/api/care-plans", { headers }),
-        axios.get("/api/blood-banks", { headers }),
+        client.get("/health-records"),
+        client.get("/documents"),
+        client.get("/care-plans"),
+        client.get("/blood-banks"),
       ])
 
       setStats({
