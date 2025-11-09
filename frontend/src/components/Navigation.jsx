@@ -33,7 +33,7 @@ export default function Navigation({ setIsAuthenticated }) {
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg blur-md opacity-75 group-hover:opacity-100 transition"></div>
               <div className="relative bg-slate-900 rounded-lg p-1.5">
-                <img src="/logo.png" alt="HealthHub Logo" className="w-8 h-8" />
+                <img src="/logo.png" alt="JeevanSetu Logo" className="w-8 h-8" />
               </div>
             </div>
             <div className="flex flex-col">
@@ -85,7 +85,7 @@ export default function Navigation({ setIsAuthenticated }) {
               <Link
                 key={path}
                 to={path}
-                className="block px-4 py-3 hover:bg-blue-600/20 rounded-lg flex items-center space-x-2 text-slate-300 hover:text-cyan-300 transition-all duration-200 border border-transparent hover:border-cyan-500/30"
+                className="px-4 py-3 hover:bg-blue-600/20 rounded-lg flex items-center space-x-2 text-slate-300 hover:text-cyan-300 transition-all duration-200 border border-transparent hover:border-cyan-500/30"
               >
                 <Icon className="w-4 h-4" />
                 <span className="font-medium">{label}</span>

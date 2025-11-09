@@ -110,7 +110,7 @@ router.post("/", authMiddleware, async (req, res) => {
 
     const offlinePayload = buildOfflinePayload(passport)
     const encoded = toBase64Url(JSON.stringify(offlinePayload))
-    const offlineQrContent = `healthhub://passport/offline?data=${encoded}`
+    const offlineQrContent = `JeevanSetu://passport/offline?data=${encoded}`
     passport.qrCodes = passport.qrCodes || {}
     passport.qrCodes.offline = await QRCode.toDataURL(offlineQrContent, { margin: 1, width: 360 })
     passport.offlinePayload = offlinePayload

@@ -1,7 +1,7 @@
 {
-  "name": "healthhub-frontend",
+  "name": "JeevanSetu-frontend",
   "version": "1.0.0",
-  "description": "HealthHub Frontend",
+  "description": "JeevanSetu Frontend",
   "private": true,
   "type": "module",
   "scripts": {

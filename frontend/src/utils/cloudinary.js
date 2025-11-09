@@ -1,5 +1,5 @@
 // Cloudinary configuration for frontend direct upload (optional)
-export const CLOUDINARY_UPLOAD_PRESET = "healthhub"
+export const CLOUDINARY_UPLOAD_PRESET = "JeevanSetu"
 export const CLOUDINARY_CLOUD_NAME = "your_cloud_name"
 
 export const uploadToCloudinary = async (file) => {

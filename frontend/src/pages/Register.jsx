@@ -45,12 +45,12 @@ export default function Register({ setIsAuthenticated }) {
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-lg opacity-75"></div>
             <div className="relative bg-slate-900 rounded-full p-4">
-              <img src="/logo.png" alt="HealthHub Logo" className="w-10 h-10" />
+              <img src="/logo.png" alt="JeevanSetu Logo" className="w-10 h-10" />
             </div>
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-center mb-2 text-white">Join HealthHub</h1>
+        <h1 className="text-3xl font-bold text-center mb-2 text-white">Join JeevanSetu</h1>
         <p className="text-center text-slate-400 mb-8 text-sm">
           Create your account to get started with our healthcare platform
         </p>
