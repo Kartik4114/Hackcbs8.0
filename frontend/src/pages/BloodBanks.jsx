@@ -282,7 +282,7 @@ export default function BloodBanks() {
               </h2>
               <div className="overflow-x-auto pb-4 scroll-smooth">
                 <div className="flex gap-4 min-w-max">
-                  {nearbyProviders.map((provider) => (
+                  {nearbyProviders.filter((provider) => provider.bloodInventory[selectedBloodType] > 0).map((provider) => (
                     <div
                       key={provider._id}
                       className="flex-shrink-0 w-80 bg-slate-800/50 border border-slate-700 rounded-lg p-5 hover:border-cyan-500/50 transition backdrop-blur group flex flex-col"
