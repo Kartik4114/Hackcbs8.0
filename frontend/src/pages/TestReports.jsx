@@ -48,11 +48,7 @@ export default function TestReports() {
         formData.append("testContent", reportData.testContent)
       }
 
-      const { data } = await client.post("/test-reports", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
+      const { data } = await client.post("/test-reports", formData)
 
       setReports([data, ...reports])
       setActiveView("overview")

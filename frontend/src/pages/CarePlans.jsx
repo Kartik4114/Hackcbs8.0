@@ -49,11 +49,7 @@ export default function CarePlans() {
         formData.append("prescriptionText", planData.prescriptionText)
       }
 
-      const { data } = await client.post("/care-plans", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
+      const { data } = await client.post("/care-plans", formData)
 
       setPlans([data, ...plans])
       setActiveView("overview")

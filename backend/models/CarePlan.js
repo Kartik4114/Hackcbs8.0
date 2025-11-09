@@ -61,6 +61,7 @@ const carePlanSchema = new mongoose.Schema({
       },
     ],
     qrCode: String,
+    shareUrl: String,
   },
 
   language: {

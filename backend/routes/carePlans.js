@@ -7,9 +7,19 @@ const multer = require("multer")
 const cloudinary = require("../config/cloudinary")
 const fs = require("fs")
 const path = require("path")
+const QRCode = require("qrcode")
 
 const AI_OUTPUT_DISCLAIMER =
   "AI-generated guidance. Please consult a licensed healthcare professional before making medical decisions."
+const getShareBaseUrl = () => {
+  if (process.env.CARE_PLAN_SHARE_BASE_URL) {
+    return process.env.CARE_PLAN_SHARE_BASE_URL.replace(/\/$/, "")
+  }
+  if (process.env.APP_BASE_URL) {
+    return `${process.env.APP_BASE_URL.replace(/\/$/, "")}/care-plan`
+  }
+  return "https://healthhub.app/care-plan"
+}
 
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage() })
@@ -22,10 +32,12 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
     let prescriptionContent = prescriptionText
     let filename = null
     let fileUrl = null
+    let fileExt = null
 
     if (req.file) {
       try {
         filename = req.file.originalname
+        fileExt = path.extname(filename).toLowerCase()
         const result = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             { resource_type: "auto", folder: "healthhub-prescriptions" },
@@ -39,7 +51,6 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
         fileUrl = result.secure_url
 
         // Extract content from file buffer for analysis
-        const fileExt = path.extname(filename).toLowerCase()
         if (fileExt === ".pdf") {
           const pdfParse = require("pdf-parse")
           const data = await pdfParse(req.file.buffer)
@@ -58,6 +69,7 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
       content: prescriptionContent,
       filename: filename,
       isFile: !!req.file,
+      fileType: fileExt,
     })
     const disclaimer = aiAnalysis.disclaimer || AI_OUTPUT_DISCLAIMER
 
@@ -104,6 +116,21 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
         completed: false,
         time: med.timing[0] || "Morning",
       })),
+      familySharing: {
+        sharedWith: [],
+      },
+    })
+
+    const shareBaseUrl = getShareBaseUrl()
+    const shareUrl = `${shareBaseUrl}/${carePlan._id}`
+    carePlan.familySharing.shareUrl = shareUrl
+    carePlan.familySharing.qrCode = await QRCode.toDataURL(shareUrl, {
+      margin: 1,
+      width: 360,
+      color: {
+        dark: "#0f172a",
+        light: "#ffffff",
+      },
     })
 
     await carePlan.save()

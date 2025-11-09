@@ -11,6 +11,19 @@ export default function TreatmentPlanView({ plan, language, onBack }) {
   const [activeTab, setActiveTab] = useState("overview")
   const [isSpeaking, setIsSpeaking] = useState(false)
   const disclaimerText = plan.aiSummary?.disclaimer || AI_DISCLAIMER_TEXT
+  const normalizeList = (value) => {
+    if (!value) return []
+    if (Array.isArray(value)) {
+      return value.map((item) => (typeof item === "string" ? item.trim() : item)).filter(Boolean)
+    }
+    if (typeof value === "string") {
+      return value
+        .split(/[\n,]/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+    }
+    return []
+  }
 
   const speak = (text) => {
     if (!window.speechSynthesis) return
@@ -141,40 +154,59 @@ export default function TreatmentPlanView({ plan, language, onBack }) {
               </h3>
               {plan.dietPlan && (
                 <div className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 rounded-lg p-6 border border-green-500/20">
-                      <h4 className="font-semibold text-green-400 mb-4">Foods to Eat</h4>
-                      <ul className="space-y-2">
-                        {plan.dietPlan.foods_to_eat.map((food, idx) => (
-                          <li key={idx} className="text-slate-300 flex gap-2 text-sm">
-                            <span className="text-green-400">•</span>
-                            <span>{food}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="bg-gradient-to-br from-red-500/10 to-rose-500/5 rounded-lg p-6 border border-red-500/20">
-                      <h4 className="font-semibold text-red-400 mb-4">Foods to Avoid</h4>
-                      <ul className="space-y-2">
-                        {plan.dietPlan.foods_to_avoid.map((food, idx) => (
-                          <li key={idx} className="text-slate-300 flex gap-2 text-sm">
-                            <span className="text-red-400">•</span>
-                            <span>{food}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600/50 hover:border-slate-600 transition-colors">
-                      <h4 className="font-semibold text-cyan-400 mb-3">Meal Schedule</h4>
-                      <p className="text-slate-300 leading-relaxed">{plan.dietPlan.meal_schedule}</p>
-                    </div>
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600/50 hover:border-slate-600 transition-colors">
-                      <h4 className="font-semibold text-cyan-400 mb-3">Water Intake</h4>
-                      <p className="text-slate-300 leading-relaxed">{plan.dietPlan.water_intake}</p>
-                    </div>
-                  </div>
+                  {(() => {
+                    const foodsToEat = normalizeList(plan.dietPlan.foods_to_eat)
+                    const foodsToAvoid = normalizeList(plan.dietPlan.foods_to_avoid)
+                    const mealSchedule = plan.dietPlan.meal_schedule?.trim()
+                    const waterIntake = plan.dietPlan.water_intake?.trim()
+                    const emptyText = "Not specified in document"
+                    return (
+                      <>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 rounded-lg p-6 border border-green-500/20">
+                            <h4 className="font-semibold text-green-400 mb-4">Foods to Eat</h4>
+                            {foodsToEat.length > 0 ? (
+                              <ul className="space-y-2">
+                                {foodsToEat.map((food, idx) => (
+                                  <li key={idx} className="text-slate-300 flex gap-2 text-sm">
+                                    <span className="text-green-400">•</span>
+                                    <span>{food}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-sm text-slate-500">{emptyText}</p>
+                            )}
+                          </div>
+                          <div className="bg-gradient-to-br from-red-500/10 to-rose-500/5 rounded-lg p-6 border border-red-500/20">
+                            <h4 className="font-semibold text-red-400 mb-4">Foods to Avoid</h4>
+                            {foodsToAvoid.length > 0 ? (
+                              <ul className="space-y-2">
+                                {foodsToAvoid.map((food, idx) => (
+                                  <li key={idx} className="text-slate-300 flex gap-2 text-sm">
+                                    <span className="text-red-400">•</span>
+                                    <span>{food}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-sm text-slate-500">{emptyText}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600/50 hover:border-slate-600 transition-colors">
+                            <h4 className="font-semibold text-cyan-400 mb-3">Meal Schedule</h4>
+                            <p className="text-slate-300 leading-relaxed">{mealSchedule || emptyText}</p>
+                          </div>
+                          <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600/50 hover:border-slate-600 transition-colors">
+                            <h4 className="font-semibold text-cyan-400 mb-3">Water Intake</h4>
+                            <p className="text-slate-300 leading-relaxed">{waterIntake || emptyText}</p>
+                          </div>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
               )}
             </div>

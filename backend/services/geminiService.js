@@ -1,4 +1,4 @@
-const axios = require("axios")
+﻿const axios = require("axios")
 const fs = require("fs")
 const path = require("path")
 const pdfParse = require("pdf-parse")
@@ -208,24 +208,38 @@ Quality guardrails:
 
 async function analyzePrescriptionWithGemini(prescriptionData) {
   try {
-    const { content, filename, isFile } = prescriptionData
+    const { content, filename, isFile, fileType } = prescriptionData
+
+    let contentForPrompt = content
+    let mediaContent = null
+
+    if (isFile && fileType && [".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(fileType)) {
+      mediaContent = {
+        base64: content,
+        mimeType: fileType,
+      }
+    } else {
+      contentForPrompt = content
+    }
+
+    const transcriptContext = mediaContent
+      ? `An image of the prescription or doctor's notes is attached. Read every legible instruction carefully and do NOT invent medicines or values that are unclear.`
+      : `---BEGIN DOCUMENT---
+${contentForPrompt || "No text detected"}
+---END DOCUMENT---`
 
     const prompt = `You are an experienced clinical pharmacist. Extract EVERY concrete instruction from the prescription or doctor notes below and convert it into structured patient-friendly guidance.
 
 Source details:
 - Filename (if supplied): ${filename || "N/A"}
 - Input format: ${isFile ? "Uploaded document" : "Plain text"}
-
-Prescription/Doctor Notes Content:
----BEGIN DOCUMENT---
-${content}
----END DOCUMENT---
+- Context: ${transcriptContext}
 
 Output expectations:
-1. Use the exact medicine names when visible. If abbreviated, expand common forms (e.g., \"Met\" -> \"Metformin\").
+1. Use the exact medicine names when visible. If abbreviated, expand common forms (e.g., "Met" -> "Metformin").
 2. Dosage, frequency, duration, and timing must retain the units and cadence given in the document.
-3. Diet, lifestyle, and exercise advice must include a short justification (\"what it helps\") in the same string.
-4. If the prescription is unclear in any area, explicitly mention \"Not specified in document\" for that field instead of inventing data.
+3. Diet, lifestyle, and exercise advice must include a short justification ("what it helps") in the same string.
+4. If the prescription is unclear in any area, explicitly mention "Not specified in document" for that field instead of inventing data.
 5. Return ONLY valid JSON (no markdown) that matches this schema:
 {
   "condition": "Primary condition or symptom focus. Mention if inferred.",
@@ -241,19 +255,19 @@ Output expectations:
     }
   ],
   "dietPlan": {
-    "foods_to_eat": ["Item — why it helps"],
-    "foods_to_avoid": ["Item — risk it mitigates"],
+    "foods_to_eat": ["Item � why it helps"],
+    "foods_to_avoid": ["Item � risk it mitigates"],
     "meal_schedule": "Meal timing guidance",
     "water_intake": "Liters or glasses per day"
   },
   "dosAndDonts": {
-    "dos": ["Action — benefit"],
-    "donts": ["Action — risk/why avoid"]
+    "dos": ["Action � benefit"],
+    "donts": ["Action � risk/why avoid"]
   },
-  "precautions": ["Precaution — specific trigger to watch"],
+  "precautions": ["Precaution � specific trigger to watch"],
   "followUp": "When to review with doctor and what to monitor",
-  "lifestyleChanges": ["Change — projected impact"],
-  "exerciseRecommendations": ["Exercise — duration/intensity and reason"],
+  "lifestyleChanges": ["Change � projected impact"],
+  "exerciseRecommendations": ["Exercise � duration/intensity and reason"],
   "disclaimer": "${AI_DISCLAIMER}"
 }
 
@@ -262,14 +276,33 @@ Safety:
 - Flag missing information transparently.
 - Use the disclaimer string exactly as provided.`
 
+    const parts = [
+      {
+        text: prompt,
+      },
+    ]
+
+    if (mediaContent) {
+      const mimeTypeMap = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+      }
+      const mimeType = mimeTypeMap[mediaContent.mimeType] || "image/jpeg"
+      parts.push({
+        inline_data: {
+          mime_type: mimeType,
+          data: mediaContent.base64,
+        },
+      })
+    }
+
     const response = await axios.post(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       contents: [
         {
-          parts: [
-            {
-              text: prompt,
-            },
-          ],
+          parts,
         },
       ],
       generationConfig: {
@@ -291,6 +324,7 @@ Safety:
   }
 }
 
+
 module.exports = {
   analyzeTestReportWithGemini,
   analyzePrescriptionWithGemini,
@@ -298,3 +332,6 @@ module.exports = {
   extractTextFromPDF,
   convertImageToBase64,
 }
+
+
+

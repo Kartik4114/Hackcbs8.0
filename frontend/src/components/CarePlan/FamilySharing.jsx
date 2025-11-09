@@ -1,12 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Share2, QrCode, Users, Mail } from "lucide-react"
+import { Share2, QrCode, Users, Mail, Copy } from "lucide-react"
 
 export default function FamilySharing({ plan }) {
   const [showForm, setShowForm] = useState(false)
   const [email, setEmail] = useState("")
   const [relationship, setRelationship] = useState("")
+  const [copied, setCopied] = useState(false)
+
+  const shareUrl = plan.familySharing?.shareUrl
 
   const handleShare = () => {
     // TODO: Add backend integration
@@ -14,6 +17,13 @@ export default function FamilySharing({ plan }) {
     setEmail("")
     setRelationship("")
     setShowForm(false)
+  }
+
+  const handleCopyLink = () => {
+    if (!shareUrl) return
+    navigator.clipboard?.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -30,12 +40,32 @@ export default function FamilySharing({ plan }) {
           QR Code
         </h4>
         <p className="text-slate-300 mb-4">Family members can scan this QR code to access your care plan</p>
-        <div className="bg-white p-4 w-48 h-48 rounded-lg">
-          {/* QR Code placeholder */}
-          <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 text-sm">
-            QR Code
-          </div>
+        <div className="bg-white p-4 w-48 h-48 rounded-lg flex items-center justify-center">
+          {plan.familySharing?.qrCode ? (
+            <img src={plan.familySharing.qrCode} alt="Care plan QR code" className="w-full h-full object-contain" />
+          ) : (
+            <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 text-sm">
+              QR Code
+            </div>
+          )}
         </div>
+        {shareUrl && (
+          <div className="mt-4">
+            <p className="text-xs uppercase tracking-wide text-slate-400 mb-2">Share link</p>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 bg-slate-900/40 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 text-xs truncate">
+                {shareUrl}
+              </div>
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 px-3 py-2 rounded-lg text-xs transition"
+              >
+                <Copy className="w-4 h-4" />
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Share Form */}
@@ -93,7 +123,7 @@ export default function FamilySharing({ plan }) {
       </div>
 
       {/* Shared With */}
-      {plan.familySharing?.sharedWith.length > 0 && (
+      {plan.familySharing?.sharedWith?.length > 0 && (
         <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
           <h4 className="font-semibold mb-4">Shared With</h4>
           <div className="space-y-3">

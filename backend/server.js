@@ -28,6 +28,7 @@ app.use("/api/documents", require("./routes/documents"))
 app.use("/api/blood-banks", require("./routes/bloodBanks"))
 app.use("/api/care-plans", require("./routes/carePlans"))
 app.use("/api/test-reports", require("./routes/testReports")) // Add test reports route
+app.use("/api/health-passport", require("./routes/healthPassport"))
 
 // Health check
 app.get("/api/health", (req, res) => {

@@ -1,7 +1,7 @@
 "use client"
 
 import { Link, useNavigate } from "react-router-dom"
-import { Menu, X, LogOut, Home, FileText, Droplet, Heart, Briefcase, Pill } from "lucide-react"
+import { Menu, X, LogOut, Home, FileText, Droplet, Heart, Briefcase, Pill, Shield } from "lucide-react"
 import { useState } from "react"
 
 export default function Navigation({ setIsAuthenticated }) {
@@ -22,6 +22,7 @@ export default function Navigation({ setIsAuthenticated }) {
     { path: "/blood-banks", label: "Blood Banks", icon: Droplet },
     { path: "/care-plans", label: "Care Plans", icon: Heart },
     { path: "/test-reports", label: "Test Reports", icon: Pill },
+    { path: "/health-passport", label: "Health Passport", icon: Shield },
   ]
 
   return (
