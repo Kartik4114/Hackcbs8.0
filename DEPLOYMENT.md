@@ -92,7 +92,6 @@ aws s3 sync dist/ s3://your-bucket-name
 # Backup MongoDB Atlas
 # Download from MongoDB Atlas dashboard
 
-# Or use mongodump
-mongodump --uri "mongodb+srv://user:pass@cluster.mongodb.net/healthhub"
+
 \`\`\`
 \`\`\`

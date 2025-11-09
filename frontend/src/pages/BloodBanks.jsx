@@ -1,8 +1,78 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import axios from "axios"
 import { MapPin, Phone, Droplet, Plus, Edit, Navigation, Droplets, AlertCircle, Check } from "lucide-react"
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet"
+import L from "leaflet"
+import "leaflet/dist/leaflet.css"
+
+const isValidCoordinate = (lat, lon) => Number.isFinite(lat) && Number.isFinite(lon)
+
+const createMarkerIcon = (color) =>
+  L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        position: relative;
+        width: 28px;
+        height: 28px;
+      ">
+        <span style="
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background: ${color};
+          border: 4px solid rgba(15,23,42,0.9);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+        "></span>
+        <span style="
+          position:absolute;
+          bottom:-12px;
+          left:50%;
+          transform:translateX(-50%);
+          width:0;
+          height:0;
+          border-left:8px solid transparent;
+          border-right:8px solid transparent;
+          border-top:12px solid ${color};
+        "></span>
+      </div>
+    `,
+    iconSize: [28, 40],
+    iconAnchor: [14, 36],
+    popupAnchor: [0, -30],
+  })
+
+const MapBounds = ({ userLocation, providers = [] }) => {
+  const map = useMap()
+
+  useEffect(() => {
+    const points = []
+
+    if (isValidCoordinate(userLocation?.latitude, userLocation?.longitude)) {
+      points.push([userLocation.latitude, userLocation.longitude])
+    }
+
+    providers.forEach((provider) => {
+      if (isValidCoordinate(provider.latitude, provider.longitude)) {
+        points.push([provider.latitude, provider.longitude])
+      }
+    })
+
+    if (points.length === 0) {
+      return
+    }
+
+    if (points.length === 1) {
+      map.setView(points[0], 13)
+    } else {
+      map.fitBounds(points, { padding: [40, 40] })
+    }
+  }, [map, userLocation, providers])
+
+  return null
+}
 
 export default function BloodBanks() {
   const [user, setUser] = useState(null)
@@ -36,6 +106,31 @@ export default function BloodBanks() {
     "AB+": 0,
     "AB-": 0,
   })
+
+  const hasUserLocation = isValidCoordinate(userLocation?.latitude, userLocation?.longitude)
+
+  const providerMarkers = useMemo(() => {
+    return nearbyProviders
+      .map((provider) => ({
+        ...provider,
+        latitude: Number(provider.latitude),
+        longitude: Number(provider.longitude),
+      }))
+      .filter((provider) => Number.isFinite(provider.latitude) && Number.isFinite(provider.longitude))
+  }, [nearbyProviders])
+
+  const mapDefaultCenter = useMemo(() => {
+    if (hasUserLocation) {
+      return [userLocation.latitude, userLocation.longitude]
+    }
+    if (providerMarkers.length > 0) {
+      return [providerMarkers[0].latitude, providerMarkers[0].longitude]
+    }
+    return [28.6139, 77.209] // New Delhi fallback
+  }, [hasUserLocation, userLocation, providerMarkers])
+
+  const userMarkerIcon = useMemo(() => createMarkerIcon("#22d3ee"), [])
+  const providerMarkerIcon = useMemo(() => createMarkerIcon("#f87171"), [])
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
@@ -156,19 +251,6 @@ export default function BloodBanks() {
   }
 
   if (user?.role === "patient") {
-    const mapCenterLat = userLocation?.latitude || 0
-    const mapCenterLon = userLocation?.longitude || 0
-
-    const allLatitudes = [mapCenterLat, ...(nearbyProviders.map((p) => p.latitude) || [])]
-    const allLongitudes = [mapCenterLon, ...(nearbyProviders.map((p) => p.longitude) || [])]
-
-    const minLat = Math.min(...allLatitudes)
-    const maxLat = Math.max(...allLatitudes)
-    const minLon = Math.min(...allLongitudes)
-    const maxLon = Math.max(...allLongitudes)
-
-    const padding = 0.05
-    const bbox = `${minLon - padding},${minLat - padding},${maxLon + padding},${maxLat + padding}`
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
@@ -284,14 +366,60 @@ export default function BloodBanks() {
 
             {/* Map Container */}
             <div className="relative w-full h-96 bg-slate-700">
-              <iframe
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${userLocation?.latitude},${userLocation?.longitude}`}
-                style={{ border: 0 }}
-                allowFullScreen=""
-              />
+              <MapContainer
+                center={mapDefaultCenter}
+                zoom={13}
+                scrollWheelZoom
+                className="w-full h-full"
+                style={{ height: "100%", width: "100%" }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapBounds userLocation={userLocation} providers={providerMarkers} />
+
+                {hasUserLocation && (
+                  <Marker
+                    position={[userLocation.latitude, userLocation.longitude]}
+                    icon={userMarkerIcon}
+                    key="user-location"
+                  >
+                    <Popup>
+                      <div className="text-sm space-y-1">
+                        <p className="font-semibold text-slate-900">You are here</p>
+                        <p className="text-slate-600">
+                          {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {providerMarkers.map((provider) => {
+                  const availableUnits = provider.bloodInventory?.[selectedBloodType] ?? 0
+                  const availabilityClass = availableUnits > 0 ? "text-green-600" : "text-red-600"
+
+                  return (
+                    <Marker
+                      key={provider._id}
+                      position={[provider.latitude, provider.longitude]}
+                      icon={providerMarkerIcon}
+                    >
+                      <Popup>
+                        <div className="text-sm space-y-1 max-w-[220px]">
+                          <p className="font-semibold text-slate-900">{provider.organizationName}</p>
+                          {provider.address && <p className="text-slate-600">{provider.address}</p>}
+                          {provider.phone && <p className="text-slate-600">Phone: {provider.phone}</p>}
+                          <p className={`font-semibold ${availabilityClass}`}>
+                            {selectedBloodType}: {availableUnits} units
+                          </p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )
+                })}
+              </MapContainer>
 
               {/* Location Markers Info - Always Visible with Better Styling */}
               <div className="absolute bottom-4 left-4 bg-slate-900/95 border border-cyan-500/50 rounded-lg p-4 backdrop-blur-lg max-w-xs shadow-lg">
@@ -300,7 +428,7 @@ export default function BloodBanks() {
                     <div className="w-4 h-4 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50"></div>
                     <span className="text-cyan-400 font-semibold text-sm">Your Location</span>
                   </div>
-                  {userLocation && (
+                  {hasUserLocation && (
                     <p className="text-slate-300 text-xs ml-6">
                       {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
                     </p>
@@ -312,7 +440,9 @@ export default function BloodBanks() {
                     <div className="w-4 h-4 rounded-full bg-red-400 shadow-lg shadow-red-400/50"></div>
                     <span className="text-red-400 font-semibold text-sm">Blood Banks/Hospitals</span>
                   </div>
-                  <p className="text-slate-300 text-xs ml-6">{nearbyProviders.length} providers found</p>
+                  <p className="text-slate-300 text-xs ml-6">
+                    {providerMarkers.length} mapped / {nearbyProviders.length} total
+                  </p>
                 </div>
               </div>
             </div>

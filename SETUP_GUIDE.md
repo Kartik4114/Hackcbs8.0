@@ -186,8 +186,7 @@ DELETE /care-plans/:id       - Delete care plan
 
 - **PORT**: Server port (default 5000)
 - **MONGODB_URI**: MongoDB connection string
-  - Local: \`mongodb://localhost:27017/healthhub\`
-  - Atlas: \`mongodb+srv://username:password@cluster.mongodb.net/healthhub\`
+
 - **JWT_SECRET**: Secret key for JWT tokens (use strong key in production)
 - **CLOUDINARY_CLOUD_NAME**: Your Cloudinary cloud name
 - **CLOUDINARY_API_KEY**: Your Cloudinary API key
