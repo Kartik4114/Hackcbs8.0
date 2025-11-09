@@ -21,6 +21,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
+      host: "0.0.0.0",
+      allowedHosts: ["mastonhead.tech", "www.mastonhead.tech"],
       port: 3000,
       proxy: {
         "/api": {
